@@ -211,4 +211,4 @@ application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

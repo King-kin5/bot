@@ -6,7 +6,7 @@ import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -199,6 +199,21 @@ async def webhook(request: Request):
     except Exception as e:
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
+
+@app.get("/")
+async def root():
+    return PlainTextResponse("Welcome to my API")
+
+
+@app.on_event("startup")
+async def on_startup():
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
+    data = {'url': 'https://bot-b7bm.onrender.com/webhook'}
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        logger.info('Webhook set up successfully!')
+    else:
+        logger.error(f'Error setting up webhook: {response.text}')
 
 
 # Registering handlers

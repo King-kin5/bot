@@ -218,7 +218,7 @@ def main() -> None:
 
 def set_webhook():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
-    data = {'url': f'https://bot.onrender.com/webhook'}
+    data = {'url': f'https://bot-8gnf.onrender.com/webhook'}
     response = requests.post(url, json=data)
     if response.status_code == 200:
         print('Webhook set up successfully!')

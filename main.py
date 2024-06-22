@@ -91,6 +91,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text="Hi. It's Bot Mode. You can ask me anything and talk to me about what you want.",
         reply_markup=reply_markup,
     )
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
+    data = {'url': 'https://bot-b7bm.onrender.com/webhook'}
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        logger.info('Webhook set up successfully!')
+    else:
+        logger.error(f'Error setting up webhook: {response.text}')
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle button clicks from the inline keyboard."""
@@ -193,15 +200,6 @@ async def webhook(request: Request):
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
 
-@app.on_event("startup")
-async def on_startup():
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
-    data = {'url': 'https://bot-b7bm.onrender.com/webhook'}
-    response = requests.post(url, json=data)
-    if response.status_code == 200:
-        logger.info('Webhook set up successfully!')
-    else:
-        logger.error(f'Error setting up webhook: {response.text}')
 
 # Registering handlers
 application.add_handler(CommandHandler("start", start))

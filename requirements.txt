@@ -1,5 +1,7 @@
+fastapi
 python-telegram-bot
-requests
-beautifulsoup4
+uvicorn
 google-generativeai
 python-dotenv
+beautifulsoup4
+requests

@@ -193,7 +193,7 @@ async def webhook(request: Request):
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
 
-@app.on_event("lifespan_startup")
+@app.on_event("startup")
 async def on_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
     data = {'url': 'https://bot-b7bm.onrender.com/webhook'}

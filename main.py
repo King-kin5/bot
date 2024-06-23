@@ -13,7 +13,7 @@ from movie import movieGeminiChat
 load_dotenv()
 
 # Your API tokens
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7076266636:AAGXwL91IsTVZKuuuL6koV8i4mNCu-n8mBg",)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "7076266636:AAGXwL91IsTVZKuuuL6koV8i4mNCu-n8mBg")
 CHAT_ID = int(os.getenv("CHAT_ID", "1606532391"))
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyACqJauwxlTUabRzejusyWidPJzM9tcgeE")
 
@@ -228,7 +228,9 @@ async def shutdown():
     await delete_webhook()
 
 # Registering handlers
-application = ApplicationBuilder().token(BOT_TOKEN, worker_num=1).build()
+from telegram.ext import Application
+
+application = Application.builder().token(BOT_TOKEN, threaded=False).build()
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CallbackQueryHandler(button))

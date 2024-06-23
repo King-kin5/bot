@@ -1,12 +1,10 @@
 import os
 import logging
-import asyncio
 import json
 import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from fastapi import FastAPI, Request, BackgroundTasks
-from fastapi.responses import JSONResponse, PlainTextResponse
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -15,9 +13,9 @@ from movie import movieGeminiChat
 load_dotenv()
 
 # Your API tokens
-BOT_TOKEN = os.getenv("BOT_TOKEN", "7076266636:AAGXwL91IsTVZKuuuL6koV8i4mNCu-n8mBg")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "your-telegram-bot-token")
 CHAT_ID = int(os.getenv("CHAT_ID", "1606532391"))
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyACqJauwxlTUabRzejusyWidPJzM9tcgeE")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "your-gemini-api-key")
 
 # Logging
 logging.basicConfig(
@@ -75,6 +73,12 @@ latest_news_titles = set()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Start the conversation with /start command and ask the user for input."""
+    # Construct the webhook URL
+    webhook_url = f"https://bot-qjgn.onrender.com/{BOT_TOKEN}/webhook"
+    
+    # Set up the webhook
+    await setup_webhook(BOT_TOKEN, webhook_url)
+
     keyboard = [
         [
             InlineKeyboardButton("Movie News", callback_data="MOVIE_NEWS"),
@@ -129,7 +133,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def fetch_latest_news(section_url, max_articles=10):
     """Fetch the latest news articles from the given section URL."""
     response = requests.get(section_url)
-    if response.status_code!= 200:
+    if response.status_code != 200:
         logger.error(f"Failed to fetch the website content: {response.status_code}")
         return []
 
@@ -151,7 +155,7 @@ def fetch_latest_news(section_url, max_articles=10):
         news_list.append({
             'title': title,
             'link': link,
-            'ummary': summary
+            'summary': summary
         })
 
     return news_list
@@ -179,49 +183,19 @@ async def notify_latest_news(update: Update, section_url: str) -> None:
         for message in messages:
             await update.callback_query.message.reply_text(message, parse_mode="Markdown")
 
-async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Sorry, I didn't understand that command.")
-
-@app.get("/")
-async def root():
-    return PlainTextResponse("Welcome to my API")
-
-@app.head("/")
-async def head_root():
-    return PlainTextResponse("", status_code=200)
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    try:
-        update = Update.de_json(await request.json(), application.bot)
-        logger.info(f"Received update: {update}")
-        await application.update_queue.put(update)
-        return JSONResponse({"status": "ok"})
-    except Exception as e:
-        logger.error(f"Failed to process update: {e}")
-        return JSONResponse({"status": "error", "message": str(e)})
-
-@app.on_event("startup")
-async def startup_event(background_tasks: BackgroundTasks):
-    try:
-        task = background_tasks.add_task(setup_webhook, BOT_TOKEN)
-    except Exception as e:
-        logging.critical(f"Error occurred while setting up webhook: {e}")
-
-async def setup_webhook(bot_token: str):
-    url = f'https://api.telegram.org/bot{bot_token}/setWebhook'
-    data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
+async def setup_webhook(bot_token, webhook_url):
+    url = f'https://bot-qjgn.onrender.com{bot_token}/setWebhook'
+    data = {'url': webhook_url}
     try:
         response = requests.post(url, json=data)
         response.raise_for_status()
-        logger.info('Webhook set up successfully!')
+        logger.info('Webhook set successfully!')
     except requests.RequestException as e:
-        logger.error(f'Error setting up webhook: {e}')
+        logger.error(f'Error setting webhook: {e}')
 
-@app.on_event("shutdown")
-async def shutdown():
+async def shutdown(event):
     # your shutdown code here
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook'
+    url = f'https://bot-qjgn.onrender.com{BOT_TOKEN}/deleteWebhook'
     try:
         response = requests.post(url)
         response.raise_for_status()
@@ -229,12 +203,36 @@ async def shutdown():
     except requests.RequestException as e:
         logger.error(f'Error deleting webhook: {e}')
 
+@app.get(f"/{BOT_TOKEN}/webhook")
+async def get_webhook():
+    return {"message": "Webhook for Telegram bot"}
+@app.head(f"/{BOT_TOKEN}/webhook")
+async def get_webhook():
+    return {"message": "Telegram bot"}
+
+@app.post(f"/{BOT_TOKEN}/webhook")
+async def post_webhook(request: Request):
+    """Handle incoming updates from Telegram."""
+    update = await request.json()
+    logger.info(f"Received update: {update}")
+    await application.update_queue.put(Update.de_json(update, application.bot))
+    return {"message": "Update processed"}
+
+@app.on_event("startup")
+async def on_startup():
+    # Construct the webhook URL
+    webhook_url = f"https://your-public-url.com/{BOT_TOKEN}/webhook"
+    await setup_webhook(BOT_TOKEN, webhook_url)
+
+@app.on_event("shutdown")
+async def shutdown():
+    await shutdown(None)
+
 # Registering handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CallbackQueryHandler(button))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
-application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 
 if __name__ == "__main__":
     import uvicorn

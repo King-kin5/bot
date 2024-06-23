@@ -190,7 +190,7 @@ async def head_root():
 @app.on_event("startup")
 async def on_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
-    data = {'url': 'https://bot-b7bm.onrender.com/webhook'}
+    data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
     response = requests.post(url, json=data)
     if response.status_code == 200:
         logger.info('Webhook set up successfully!')

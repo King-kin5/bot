@@ -191,11 +191,12 @@ async def head_root():
 async def on_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
     data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
-    response = requests.post(url, json=data)
-    if response.status_code == 200:
+    try:
+        response = requests.post(url, json=data)
+        response.raise_for_status()
         logger.info('Webhook set up successfully!')
-    else:
-        logger.error(f'Error setting up webhook: {response.text}')
+    except requests.RequestException as e:
+        logger.error(f'Error setting up webhook: {e}')
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -208,7 +209,7 @@ async def webhook(request: Request):
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
 # Registering handlers
-application.add_handler(CommandHandler("start", start))
+application.add_handler(CommandHandler("/start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CallbackQueryHandler(button))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))

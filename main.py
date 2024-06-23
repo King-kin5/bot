@@ -4,7 +4,7 @@ import json
 import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -77,7 +77,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     webhook_url = f"https://bot-qjgn.onrender.com/{BOT_TOKEN}/webhook"
     
     # Set up the webhook
-    await setup_webhook(BOT_TOKEN, webhook_url)
+    await setup_webhook(webhook_url)
 
     keyboard = [
         [
@@ -183,21 +183,20 @@ async def notify_latest_news(update: Update, section_url: str) -> None:
         for message in messages:
             await update.callback_query.message.reply_text(message, parse_mode="Markdown")
 
-async def setup_webhook(bot_token, webhook_url):
-    url = f'https://bot-qjgn.onrender.com{bot_token}/setWebhook'
+async def setup_webhook(webhook_url):
+    telegram_url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
     data = {'url': webhook_url}
     try:
-        response = requests.post(url, json=data)
+        response = requests.post(telegram_url, json=data)
         response.raise_for_status()
         logger.info('Webhook set successfully!')
     except requests.RequestException as e:
         logger.error(f'Error setting webhook: {e}')
 
-async def shutdown(event):
-    # your shutdown code here
-    url = f'https://bot-qjgn.onrender.com{BOT_TOKEN}/deleteWebhook'
+async def delete_webhook():
+    telegram_url = f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook'
     try:
-        response = requests.post(url)
+        response = requests.post(telegram_url)
         response.raise_for_status()
         logger.info('Webhook deleted successfully!')
     except requests.RequestException as e:
@@ -206,9 +205,10 @@ async def shutdown(event):
 @app.get(f"/{BOT_TOKEN}/webhook")
 async def get_webhook():
     return {"message": "Webhook for Telegram bot"}
+
 @app.head(f"/{BOT_TOKEN}/webhook")
-async def get_webhook():
-    return {"message": "Telegram bot"}
+async def head_webhook():
+    return {"message": "Webhook for Telegram bot"}
 
 @app.post(f"/{BOT_TOKEN}/webhook")
 async def post_webhook(request: Request):
@@ -221,12 +221,12 @@ async def post_webhook(request: Request):
 @app.on_event("startup")
 async def on_startup():
     # Construct the webhook URL
-    webhook_url = f"https://your-public-url.com/{BOT_TOKEN}/webhook"
-    await setup_webhook(BOT_TOKEN, webhook_url)
+    webhook_url = f"https://bot-qjgn.onrender.com/{BOT_TOKEN}/webhook"
+    await setup_webhook(webhook_url)
 
 @app.on_event("shutdown")
 async def shutdown():
-    await shutdown(None)
+    await delete_webhook()
 
 # Registering handlers
 application.add_handler(CommandHandler("start", start))

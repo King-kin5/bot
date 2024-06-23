@@ -199,8 +199,8 @@ async def webhook(request: Request):
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
     
-@app.on_event("lifespan_startup")
-async def on_lifespan_startup():
+@app.add_event_handler("startup")
+async def startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
     data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
     try:
@@ -211,8 +211,8 @@ async def on_lifespan_startup():
         logger.error(f'Error setting up webhook: {e}')
 
 
-@app.on_event("lifespan_shutdown")
-async def on_lifespan_shutdown():
+@app.add_event_handler("lifespan_shutdown")
+async def shutdown():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook'
     try:
         response = requests.post(url)
@@ -231,3 +231,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+    startup()

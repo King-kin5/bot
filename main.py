@@ -187,8 +187,8 @@ async def root():
 @app.head("/")
 async def head_root():
     return PlainTextResponse("", status_code=200)
-@app.on_event("startup")
-async def on_startup():
+@app.on_event("lifespan_startup")
+async def on_lifespan_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
     data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
     try:
@@ -197,6 +197,17 @@ async def on_startup():
         logger.info('Webhook set up successfully!')
     except requests.RequestException as e:
         logger.error(f'Error setting up webhook: {e}')
+
+
+@app.on_event("lifespan_shutdown")
+async def on_lifespan_shutdown():
+    url = f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook'
+    try:
+        response = requests.post(url)
+        response.raise_for_status()
+        logger.info('Webhook deleted successfully!')
+    except requests.RequestException as e:
+        logger.error(f'Error deleting webhook: {e}')
 
 @app.post("/webhook")
 async def webhook(request: Request):

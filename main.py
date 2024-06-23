@@ -184,14 +184,9 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 @app.get("/")
 async def root():
     return PlainTextResponse("Welcome to my API")
-
-
-@app.api_route("/", methods=["GET", "HEAD"])
-async def root():
-    if requests.method == "HEAD":
-        return PlainTextResponse("", status_code=200)
-    else:
-        return PlainTextResponse("Welcome to my API")
+@app.head("/")
+async def head_root():
+    return PlainTextResponse("", status_code=200)
 @app.on_event("startup")
 async def on_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'

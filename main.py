@@ -181,18 +181,6 @@ async def notify_latest_news(update: Update, section_url: str) -> None:
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Sorry, I didn't understand that command.")
-
-# FastAPI route for webhook
-@app.post("/webhook")
-async def webhook(request: Request):
-    try:
-        update = Update.de_json(await request.json(), application.bot)
-        await application.update_queue.put(update)
-        return JSONResponse({"status": "ok"})
-    except Exception as e:
-        logger.error(f"Failed to process update: {e}")
-        return JSONResponse({"status": "error", "message": str(e)})
-
 @app.get("/")
 async def root():
     return PlainTextResponse("Welcome to my API")
@@ -208,7 +196,16 @@ async def on_startup():
     else:
         logger.error(f'Error setting up webhook: {response.text}')
 
-
+@app.post("/webhook")
+async def webhook(request: Request):
+    try:
+        update = Update.de_json(await request.json(), application.bot)
+        logger.info(f"Received update: {update}")
+        await application.update_queue.put(update)
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Failed to process update: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
 # Registering handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))

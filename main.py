@@ -5,7 +5,7 @@ import json
 import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import JSONResponse, PlainTextResponse
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -68,7 +68,7 @@ class GeminiChat:
             return "Couldn't reach out to Google Gemini. Try Again..."
 
 # Initialize GeminiChat instance
-gemini_chat = GeminiChat( "AIzaSyACqJauwxlTUabRzejusyWidPJzM9tcgeE")
+gemini_chat = GeminiChat(GEMINI_API_KEY)
 
 # Track latest news titles
 latest_news_titles = set()
@@ -91,7 +91,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         text="Hi. It's Bot Mode. You can ask me anything and talk to me about what you want.",
         reply_markup=reply_markup,
     )
-   
+
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle button clicks from the inline keyboard."""
     query = update.callback_query
@@ -129,7 +129,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def fetch_latest_news(section_url, max_articles=10):
     """Fetch the latest news articles from the given section URL."""
     response = requests.get(section_url)
-    if response.status_code != 200:
+    if response.status_code!= 200:
         logger.error(f"Failed to fetch the website content: {response.status_code}")
         return []
 
@@ -151,7 +151,7 @@ def fetch_latest_news(section_url, max_articles=10):
         news_list.append({
             'title': title,
             'link': link,
-            'summary': summary
+            'ummary': summary
         })
 
     return news_list
@@ -181,9 +181,11 @@ async def notify_latest_news(update: Update, section_url: str) -> None:
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Sorry, I didn't understand that command.")
+
 @app.get("/")
 async def root():
     return PlainTextResponse("Welcome to my API")
+
 @app.head("/")
 async def head_root():
     return PlainTextResponse("", status_code=200)
@@ -198,10 +200,16 @@ async def webhook(request: Request):
     except Exception as e:
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
-    
-@app.add_event_handler("startup")
-async def startup():
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
+
+@app.on_event("startup")
+async def startup_event(background_tasks: BackgroundTasks):
+    try:
+        task = background_tasks.add_task(setup_webhook, BOT_TOKEN)
+    except Exception as e:
+        logging.critical(f"Error occurred while setting up webhook: {e}")
+
+async def setup_webhook(bot_token: str):
+    url = f'https://api.telegram.org/bot{bot_token}/setWebhook'
     data = {'url': 'https://bot-qjgn.onrender.com/webhook'}
     try:
         response = requests.post(url, json=data)
@@ -210,9 +218,9 @@ async def startup():
     except requests.RequestException as e:
         logger.error(f'Error setting up webhook: {e}')
 
-
-@app.add_event_handler("lifespan_shutdown")
+@app.on_event("shutdown")
 async def shutdown():
+    # your shutdown code here
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook'
     try:
         response = requests.post(url)
@@ -220,6 +228,7 @@ async def shutdown():
         logger.info('Webhook deleted successfully!')
     except requests.RequestException as e:
         logger.error(f'Error deleting webhook: {e}')
+
 # Registering handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
@@ -230,5 +239,4 @@ application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-    startup()
+    uvicorn.run(app, host="0.0.0.0", port=8080)

@@ -184,7 +184,7 @@ async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 @app.get("/")
 async def root():
     return PlainTextResponse("Welcome to my API")
-from fastapi import APIRoute
+
 
 @app.api_route("/", methods=["GET", "HEAD"])
 async def root():

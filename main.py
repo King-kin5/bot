@@ -187,6 +187,18 @@ async def root():
 @app.head("/")
 async def head_root():
     return PlainTextResponse("", status_code=200)
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    try:
+        update = Update.de_json(await request.json(), application.bot)
+        logger.info(f"Received update: {update}")
+        await application.update_queue.put(update)
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        logger.error(f"Failed to process update: {e}")
+        return JSONResponse({"status": "error", "message": str(e)})
+    
 @app.on_event("lifespan_startup")
 async def on_lifespan_startup():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
@@ -208,17 +220,6 @@ async def on_lifespan_shutdown():
         logger.info('Webhook deleted successfully!')
     except requests.RequestException as e:
         logger.error(f'Error deleting webhook: {e}')
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    try:
-        update = Update.de_json(await request.json(), application.bot)
-        logger.info(f"Received update: {update}")
-        await application.update_queue.put(update)
-        return JSONResponse({"status": "ok"})
-    except Exception as e:
-        logger.error(f"Failed to process update: {e}")
-        return JSONResponse({"status": "error", "message": str(e)})
 # Registering handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))

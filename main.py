@@ -230,7 +230,7 @@ async def shutdown():
 # Registering handlers
 from telegram.ext import Application
 
-application = Application.builder().token(BOT_TOKEN, threaded=False).build()
+application = Application.builder().token(BOT_TOKEN).build()
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CallbackQueryHandler(button))

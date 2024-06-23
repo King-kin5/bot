@@ -202,13 +202,12 @@ async def delete_webhook():
     except requests.RequestException as e:
         logger.error(f'Error deleting webhook: {e}')
 
-@app.get(f"/{BOT_TOKEN}/webhook")
-async def get_webhook():
-    return {"message": "Webhook for Telegram bot"}
-
-@app.head(f"/{BOT_TOKEN}/webhook")
-async def head_webhook():
-    return {"message": "Webhook for Telegram bot"}
+@app.get("/")
+async def root():
+    return {"message": "Hello, this is the root endpoint of the Telegram bot service."}
+@app.head("/")
+async def head_root():
+    return {"message": "This is the head request for the root endpoint."}
 
 @app.post(f"/{BOT_TOKEN}/webhook")
 async def post_webhook(request: Request):

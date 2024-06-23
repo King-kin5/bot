@@ -209,7 +209,7 @@ async def webhook(request: Request):
         logger.error(f"Failed to process update: {e}")
         return JSONResponse({"status": "error", "message": str(e)})
 # Registering handlers
-application.add_handler(CommandHandler("/start", start))
+application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(CallbackQueryHandler(button))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
